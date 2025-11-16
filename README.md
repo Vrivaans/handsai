@@ -1,23 +1,26 @@
-# HandsAI v2 - Microservicio de Gestión de Herramientas de IA
+# HandsAI - Microservicio de Gestión de Herramientas de IA
+
+## ✨ Importante
+Para funcionar se necesita también descargar handsai-bridge
 
 ## 🚀 Descripción
 
-HandsAI v2 es un microservicio reactivo construido con Spring Boot 3.2+ y Java 21 que permite a los Modelos de Lenguaje Grande (LLMs) descubrir y ejecutar herramientas dinámicamente a través de una interfaz unificada. El sistema soporta APIs REST con descubrimiento dinámico, validación de parámetros y ejecución tolerante a fallos.
+HandsAI es un microservicio reactivo construido con Spring Boot 3.2+ y Java 21 que permite a los Modelos de Lenguaje Grande (LLMs) descubrir y ejecutar herramientas dinámicamente a través de una interfaz unificada que sigue el "Model-facing Controller Protocol" (MCP). El sistema soporta la gestión de APIs REST con descubrimiento dinámico, validación de parámetros y ejecución tolerante a fallos.
 
 ### 🎯 Características Principales
 
-- **Descubrimiento Dinámico**: Los LLMs pueden descubrir herramientas disponibles en tiempo de ejecución
-- **Interfaz Unificada**: Un solo endpoint para ejecutar cualquier herramienta registrada
-- **Tolerancia a Fallos**: Manejo elegante de errores con logging completo
-- **Caché Inteligente**: Definiciones de herramientas cacheadas en memoria para alta performance
-- **Hilos Virtuales**: Aprovecha Java 21 para alta concurrencia sin bloqueo
+- **Descubrimiento Dinámico**: Los LLMs pueden descubrir herramientas disponibles en tiempo de ejecución.
+- **Interfaz Unificada (MCP)**: Endpoints estandarizados para que los LLMs listen y ejecuten herramientas.
+- **Gestión de Herramientas**: API de administración para crear, actualizar y monitorear el ciclo de vida de las herramientas.
+- **Tolerancia a Fallos**: Manejo elegante de errores con logging completo.
+- **Caché Inteligente**: Definiciones de herramientas cacheadas en memoria para alta performance.
+- **Hilos Virtuales**: Aprovecha Java 21 para alta concurrencia sin bloqueo.
 
 ## 🛠️ Stack Tecnológico
 
 - **Framework**: Spring Boot 3.2+ con Spring WebFlux
 - **Java**: Java 21 LTS con Virtual Threads
 - **Base de Datos**: PostgreSQL con Spring Data JPA
-- **Seguridad**: Spring Security con API Keys
 - **Build**: Maven
 - **Adicionales**: Lombok, Spring DevTools
 
@@ -29,9 +32,9 @@ HandsAI v2 es un microservicio reactivo construido con Spring Boot 3.2+ y Java 2
 
 ## ⚡ Configuración y Arranque
 
-1.  **Clonar el repositorio**
+1.  **Clonar el repositorio**.
 
-2.  **Configurar la base de datos**
+2.  **Configurar la base de datos**:
     Abre el archivo `src/main/resources/application.properties` y ajusta las propiedades de conexión a tu base de datos PostgreSQL:
 
     ```properties
@@ -41,7 +44,7 @@ HandsAI v2 es un microservicio reactivo construido con Spring Boot 3.2+ y Java 2
     spring.jpa.hibernate.ddl-auto=update
     ```
 
-3.  **Construir y ejecutar la aplicación**
+3.  **Construir y ejecutar la aplicación**:
     Puedes ejecutar la aplicación usando el wrapper de Maven:
     ```bash
     ./mvnw spring-boot:run
@@ -50,9 +53,11 @@ HandsAI v2 es un microservicio reactivo construido con Spring Boot 3.2+ y Java 2
 
 ## 📖 API Endpoints
 
-La API se divide en dos secciones principales: la API de Administración para gestionar las herramientas y la API Pública para que los LLMs las descubran y ejecuten.
+La API se divide en dos secciones: la **API de Administración** para gestionar las herramientas y la **API para LLMs (MCP)** para que los modelos las descubran y ejecuten.
 
-### API de Administración (`/admin/tools/api`)
+---
+
+### API de Administración (`/admin/tools`)
 
 Estos endpoints se utilizan para gestionar el ciclo de vida de las `ApiTool`.
 
@@ -64,62 +69,22 @@ Estos endpoints se utilizan para gestionar el ciclo de vida de las `ApiTool`.
 
   ```json
   {
-    "name": "Servicio de Clima",
-    "description": "Obtiene el clima actual para una ciudad específica.",
+    "name": "Obtener Clima",
+    "description": "Proporciona el clima actual para una ciudad.",
     "baseUrl": "https://api.weatherapi.com",
     "endpointPath": "/v1/current.json",
     "httpMethod": "GET",
+    "authentication": {
+      "type": "API_KEY",
+      "apiKeyName": "key",
+      "apiKeyLocation": "QUERY"
+    },
     "parameters": [
       {
         "name": "q",
         "type": "STRING",
-        "description": "Nombre de la ciudad",
-        "required": true,
-        "defaultValue": null
-      },
-      {
-        "name": "key",
-        "type": "STRING",
-        "description": "API Key para el servicio de clima",
-        "required": true,
-        "defaultValue": null
-      }
-    ]
-  }
-  ```
-
-- **Response Body (Ejemplo)**:
-
-  ```json
-  {
-    "id": 1,
-    "code": "a1b2c3d4",
-    "name": "Servicio de Clima",
-    "description": "Obtiene el clima actual para una ciudad específica.",
-    "baseUrl": "https://api.weatherapi.com",
-    "endpointPath": "/v1/current.json",
-    "httpMethod": "GET",
-    "enabled": true,
-    "healthy": true,
-    "lastHealthCheck": "2025-08-21T10:00:00Z",
-    "parameters": [
-      {
-        "id": 1,
-        "code": "p1o2i3u4",
-        "name": "q",
-        "type": "STRING",
-        "description": "Nombre de la ciudad",
-        "required": true,
-        "defaultValue": null
-      },
-      {
-        "id": 2,
-        "code": "k1j2h3g4",
-        "name": "key",
-        "type": "STRING",
-        "description": "API Key para el servicio de clima",
-        "required": true,
-        "defaultValue": null
+        "description": "Nombre de la ciudad (ej. 'London')",
+        "required": true
       }
     ]
   }
@@ -128,8 +93,15 @@ Estos endpoints se utilizan para gestionar el ciclo de vida de las `ApiTool`.
 #### 2. Actualizar una Herramienta API
 
 - **Endpoint**: `PUT /admin/tools/api/{id}`
-- **Descripción**: Actualiza los detalles de una herramienta existente.
-- **Request Body**: `UpdateApiToolRequest` (similar al de creación, pero puede incluir el campo `enabled`).
+- **Descripción**: Actualiza los detalles de una herramienta existente. El body puede contener cualquier campo que se desee modificar.
+
+- **Request Body (Ejemplo)**:
+  ```json
+  {
+    "description": "Proporciona el clima actual y el pronóstico para una ciudad.",
+    "enabled": false
+  }
+  ```
 
 #### 3. Obtener todas las Herramientas API
 
@@ -146,80 +118,81 @@ Estos endpoints se utilizan para gestionar el ciclo de vida de las `ApiTool`.
 - **Endpoint**: `DELETE /admin/tools/api/{id}`
 - **Descripción**: Elimina una herramienta del sistema.
 
-### API Pública (`/api/tools`)
+#### 6. Validar Salud de una Herramienta
 
-Estos endpoints están diseñados para ser consumidos por LLMs.
+- **Endpoint**: `POST /admin/tools/api/{id}/validate`
+- **Descripción**: Fuerza una comprobación de salud para una herramienta específica y devuelve su estado actualizado.
 
-#### 1. Descubrir Herramientas
+---
 
-- **Endpoint**: `GET /api/tools/discover`
-- **Descripción**: Devuelve una lista de todas las herramientas activas y saludables que un LLM puede utilizar.
+### API para LLMs (MCP - `/mcp`)
+
+Estos endpoints están diseñados para ser consumidos por LLMs y siguen el "Model-facing Controller Protocol".
+
+#### 1. Listar Herramientas Disponibles
+
+- **Endpoint**: `GET /mcp/tools/list`
+- **Descripción**: Devuelve las herramientas que el LLM puede usar, en formato MCP.
 - **Response Body (Ejemplo)**:
 
   ```json
   {
-    "tools": [
-      {
-        "name": "Servicio de Clima",
-        "description": "Obtiene el clima actual para una ciudad específica.",
-        "type": "api_tool",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "q": {
-              "type": "string",
-              "description": "Nombre de la ciudad"
+    "jsonrpc": "2.0",
+    "result": {
+      "tools": [
+        {
+          "name": "Obtener Clima",
+          "description": "Proporciona el clima actual para una ciudad.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "q": {
+                "type": "string",
+                "description": "Nombre de la ciudad (ej. 'London')"
+              }
             },
-            "key": {
-              "type": "string",
-              "description": "API Key para el servicio de clima"
-            }
-          },
-          "required": ["q", "key"]
+            "required": ["q"]
+          }
         }
-      }
-    ],
-    "totalCount": 1,
-    "lastUpdated": "2025-08-21T10:05:00Z"
+      ]
+    }
   }
   ```
 
 #### 2. Ejecutar una Herramienta
 
-- **Endpoint**: `POST /api/tools/execute`
-- **Descripción**: Ejecuta una herramienta específica con los parámetros proporcionados.
+- **Endpoint**: `POST /mcp/tools/call`
+- **Descripción**: Ejecuta una herramienta con los argumentos proporcionados.
 - **Request Body**:
 
   ```json
   {
-    "toolName": "Servicio de Clima",
-    "parameters": {
-      "q": "Buenos Aires",
-      "key": "YOUR_API_KEY"
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "Obtener Clima",
+      "arguments": {
+        "q": "Buenos Aires"
+      }
     },
-    "sessionId": "conv_12345"
+    "id": "req-12345"
   }
   ```
 
 - **Response Body (Ejemplo)**:
+  El campo `text` contiene el resultado de la API externa como una cadena de texto JSON.
 
   ```json
   {
-    "success": true,
+    "jsonrpc": "2.0",
     "result": {
-      "location": {
-        "name": "Buenos Aires",
-        "region": "Distrito Federal",
-        "country": "Argentina"
-      },
-      "current": {
-        "temp_c": 15.0,
-        "condition": {
-          "text": "Partly cloudy"
+      "content": [
+        {
+          "type": "text",
+          "text": "{'location':{'name':'Buenos Aires', ...},'current':{'temp_c':18.0, ...}}"
         }
-      }
+      ]
     },
-    "executionTimeMs": 750,
-    "toolType": "api_tool"
+    "id": "req-12345"
   }
-  ```</llm-patch>
+  ```
