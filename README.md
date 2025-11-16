@@ -1,7 +1,7 @@
-# HandsAI - Microservicio de Gestión de Herramientas de IA
+# HandsAI - IA como cerebro, HandsAI como sus manos.
 
 ## ✨ Importante
-Para funcionar se necesita también descargar handsai-bridge
+Para funcionar se necesita también descargar handsai-bridge: https://github.com/Vrivaans/handsai-bridge
 
 ## 🚀 Descripción
 
